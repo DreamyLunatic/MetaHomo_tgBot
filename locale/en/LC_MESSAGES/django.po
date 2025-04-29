@@ -1,0 +1,164 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-07-14 17:35+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: applications/account/forms.py:24
+msgid "First name"
+msgstr ""
+
+#: applications/account/forms.py:25
+msgid "Last name"
+msgstr ""
+
+#: applications/account/forms.py:26
+msgid "Telegram language"
+msgstr ""
+
+#: applications/account/forms.py:27
+msgid "Latitude of map center"
+msgstr ""
+
+#: applications/account/forms.py:28
+msgid "Longitude of map center"
+msgstr ""
+
+#: applications/account/forms.py:29
+msgid "Map zoom"
+msgstr ""
+
+#: applications/account/templates/account/user_settings_page.html:5
+msgid "User Data Settings Page"
+msgstr ""
+
+#: applications/account/templates/account/user_settings_page.html:71
+msgid "User data:"
+msgstr ""
+
+#: applications/account/templates/account/user_settings_page.html:72
+msgid "Result:"
+msgstr ""
+
+#: applications/account/templates/account/user_settings_page.html:74
+msgid "User ID:"
+msgstr ""
+
+#: applications/account/templates/account/user_settings_page.html:75
+msgid "User First name:"
+msgstr ""
+
+#: applications/account/templates/account/user_settings_page.html:76
+msgid "User Last name:"
+msgstr ""
+
+#: applications/account/templates/account/user_settings_page.html:77
+msgid "Username:"
+msgstr ""
+
+#: applications/account/templates/account/user_settings_page.html:78
+msgid "Telegram id:"
+msgstr ""
+
+#: applications/account/templates/account/user_settings_page.html:79
+msgid "Telegram username:"
+msgstr ""
+
+#: applications/account/templates/account/user_settings_page.html:80
+msgid "Telegram language:"
+msgstr ""
+
+#: applications/account/templates/account/user_settings_page.html:81
+msgid "Is bot:"
+msgstr ""
+
+#: applications/account/templates/account/user_settings_page.html:84
+msgid "Current tokens"
+msgstr ""
+
+#: applications/account/templates/account/user_settings_page.html:85
+msgid "refresh token:"
+msgstr ""
+
+#: applications/account/templates/account/user_settings_page.html:86
+msgid "access token:"
+msgstr ""
+
+#: applications/account/templates/account/user_settings_page.html:89
+msgid "Starting coordinates and zoom:"
+msgstr ""
+
+#: applications/account/templates/account/user_settings_page.html:97
+msgid "Editing user data:"
+msgstr ""
+
+#: applications/account/templates/account/user_settings_page.html:110
+msgid "Markers created by the current user:"
+msgstr ""
+
+#: applications/account/templates/account/user_settings_page.html:114
+msgid "Marker ID:"
+msgstr ""
+
+#: applications/account/templates/account/user_settings_page.html:115
+msgid "Time:"
+msgstr ""
+
+#: applications/account/templates/account/user_settings_page.html:116
+msgid "Message:"
+msgstr ""
+
+#: applications/account/templates/account/user_settings_page.html:117
+msgid "Latitude:"
+msgstr ""
+
+#: applications/account/templates/account/user_settings_page.html:118
+msgid "Longitude:"
+msgstr ""
+
+#: applications/account/templates/account/user_settings_page.html:119
+msgid "Photo:"
+msgstr ""
+
+#: applications/account/templates/account/user_settings_page.html:128
+msgid "You need to be a authenticated to access this page."
+msgstr ""
+
+#: applications/account/templates/account/user_settings_page.html:129
+msgid ""
+"You need to run the \"/start\" command in Telegram for your authentication."
+msgstr ""
+
+#: applications/account/views.py:111
+msgid "User data saved successfully."
+msgstr ""
+
+#: applications/core/admin.py:16
+msgid "Set the status to \"Published\""
+msgstr ""
+
+#: applications/core/admin.py:21
+msgid "Set status to \"Draft\""
+msgstr ""
+
+#: applications/map/templates/map/index.html:5
+msgid "Home page"
+msgstr ""
+
+#: applications/map/templates/map/index.html:17
+msgid "Add marker"
+msgstr ""

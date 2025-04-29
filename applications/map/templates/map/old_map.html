@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans 'Home page' %}{% endblock title %}
+
+{% block head %}
+    <link rel="stylesheet" href="{% static 'styles/leaflet_1.6.0/dist/leaflet.css' %}">
+    <script src="{% static 'scripts/leaflet_1.6.0/dist/leaflet.js' %}"></script>
+
+    <link rel="stylesheet" href="{% static 'styles/base.css' %}">
+
+{% endblock head %}
+
+{% block content %}
+	<div id="map"></div>
+	<button id="addMarkerButton">{% trans 'Add marker' %}</button>
+	<div class="marker-position"></div>
+
+    <script>
+        let mapLatitudeCenter = "{{ latitude_center|safe }}";
+        let mapLongitudeCenter = "{{ longitude_center|safe }}";
+        let mapZoom = "{{ map_zoom|safe }}";
+        let refresh_token = "{{ refresh_token|safe }}";
+        let access_token = "{{ access_token|safe }}";
+
+        {% comment %} {% if latitude_center %}
+            let mapLatitudeCenter = "{{ latitude_center|safe }}";
+        {% else %}
+            let mapLatitudeCenter = '';
+        {% endif %}
+
+        {% if longitude_center %}
+            let mapLongitudeCenter = "{{ longitude_center|safe }}";
+        {% else %}
+            let mapLongitudeCenter = '';
+        {% endif %}
+
+        {% if map_zoom %}
+            let mapZoom = "{{ map_zoom|safe }}";
+        {% else %}
+            let mapZoom = '';
+        {% endif %}
+
+        {% if refresh_token %}
+            let refresh_token = "{{ refresh_token|safe }}";
+        {% else %}
+            let refresh_token = '';
+        {% endif %}
+
+        {% if access_token %}
+            let access_token = "{{ access_token|safe }}";
+        {% else %}
+            let access_token = '';
+        {% endif %} {% endcomment %}
+    </script>
+
+	<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <script src="{% static 'scripts/custom_marker.js' %}"></script>
+
+{% endblock content %}

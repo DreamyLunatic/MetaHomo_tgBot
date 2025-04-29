@@ -1,0 +1,15 @@
+python-telegram-bot==22.0
+Flask==3.1.0
+uvicorn==0.34.2
+asgiref==3.8.1
+pyngrok==7.2.5
+djangorestframework_simplejwt==5.5.0
+Django==5.2
+rosetta==0.3
+django-admin-inline-paginator==0.4.0
+django-extensions==4.1
+spicy==0.16.0
+nltk==3.9.1
+django-model-utils==5.0.0
+rosetta==0.3
+pillow==11.2.1

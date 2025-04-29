@@ -1,0 +1,176 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-07-14 17:35+0300\n"
+"PO-Revision-Date: 2024-07-14 10:23+0000\n"
+"Last-Translator:   <admin@admin.com>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n % 1 == 0 && n % 10 == 1 && n % 100 != "
+"11 ? 0 : n % 1 == 0 && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % "
+"100 > 14) ? 1 : n % 1 == 0 && (n % 10 ==0 || (n % 10 >=5 && n % 10 <=9) || "
+"(n % 100 >=11 && n % 100 <=14 )) ? 2: 3);\n"
+"X-Translated-Using: django-rosetta 0.10.0\n"
+
+#: applications/account/forms.py:24
+#, fuzzy
+#| msgid "User First name:"
+msgid "First name"
+msgstr "Ім'я користувача:"
+
+#: applications/account/forms.py:25
+#, fuzzy
+#| msgid "User Last name:"
+msgid "Last name"
+msgstr "Прізвище користувача:"
+
+#: applications/account/forms.py:26
+#, fuzzy
+#| msgid "Telegram language:"
+msgid "Telegram language"
+msgstr "Мова Telegram:"
+
+#: applications/account/forms.py:27
+msgid "Latitude of map center"
+msgstr "Широта центру карти"
+
+#: applications/account/forms.py:28
+msgid "Longitude of map center"
+msgstr "Довгота центру карти"
+
+#: applications/account/forms.py:29
+msgid "Map zoom"
+msgstr "Масштаб карти"
+
+#: applications/account/templates/account/user_settings_page.html:5
+msgid "User Data Settings Page"
+msgstr "Сторінка налаштувань даних користувача"
+
+#: applications/account/templates/account/user_settings_page.html:71
+msgid "User data:"
+msgstr "Дані користувача:"
+
+#: applications/account/templates/account/user_settings_page.html:72
+msgid "Result:"
+msgstr "Результат:"
+
+#: applications/account/templates/account/user_settings_page.html:74
+msgid "User ID:"
+msgstr "ID користувача:"
+
+#: applications/account/templates/account/user_settings_page.html:75
+msgid "User First name:"
+msgstr "Ім'я користувача:"
+
+#: applications/account/templates/account/user_settings_page.html:76
+msgid "User Last name:"
+msgstr "Прізвище користувача:"
+
+#: applications/account/templates/account/user_settings_page.html:77
+msgid "Username:"
+msgstr "Username:"
+
+#: applications/account/templates/account/user_settings_page.html:78
+msgid "Telegram id:"
+msgstr "Id Telegram:"
+
+#: applications/account/templates/account/user_settings_page.html:79
+msgid "Telegram username:"
+msgstr "Telegram username:"
+
+#: applications/account/templates/account/user_settings_page.html:80
+msgid "Telegram language:"
+msgstr "Мова Telegram:"
+
+#: applications/account/templates/account/user_settings_page.html:81
+msgid "Is bot:"
+msgstr "Це Бот:"
+
+#: applications/account/templates/account/user_settings_page.html:84
+msgid "Current tokens"
+msgstr "Актуальні токіни"
+
+#: applications/account/templates/account/user_settings_page.html:85
+msgid "refresh token:"
+msgstr "refresh токін:"
+
+#: applications/account/templates/account/user_settings_page.html:86
+msgid "access token:"
+msgstr "access токін:"
+
+#: applications/account/templates/account/user_settings_page.html:89
+msgid "Starting coordinates and zoom:"
+msgstr "Початкові координати та масштаб:"
+
+#: applications/account/templates/account/user_settings_page.html:97
+msgid "Editing user data:"
+msgstr "Редагування даних користувача:"
+
+#: applications/account/templates/account/user_settings_page.html:110
+msgid "Markers created by the current user:"
+msgstr "Маркери, створені користувачем:"
+
+#: applications/account/templates/account/user_settings_page.html:114
+msgid "Marker ID:"
+msgstr "Маркер ID:"
+
+#: applications/account/templates/account/user_settings_page.html:115
+msgid "Time:"
+msgstr "Час:"
+
+#: applications/account/templates/account/user_settings_page.html:116
+msgid "Message:"
+msgstr "Повідомлення:"
+
+#: applications/account/templates/account/user_settings_page.html:117
+msgid "Latitude:"
+msgstr "Широта:"
+
+#: applications/account/templates/account/user_settings_page.html:118
+msgid "Longitude:"
+msgstr "Довгота:"
+
+#: applications/account/templates/account/user_settings_page.html:119
+msgid "Photo:"
+msgstr "Фото:"
+
+#: applications/account/templates/account/user_settings_page.html:128
+msgid "You need to be a authenticated to access this page."
+msgstr ""
+"Вам потрібно пройти автентифікацію, щоб отримати доступ до цієї сторінки."
+
+#: applications/account/templates/account/user_settings_page.html:129
+msgid ""
+"You need to run the \"/start\" command in Telegram for your authentication."
+msgstr ""
+"Вам потрібно виконати команду \"/start\" у Telegram для автентифікації."
+
+#: applications/account/views.py:111
+msgid "User data saved successfully."
+msgstr "Дані користувача успішно збережено."
+
+#: applications/core/admin.py:16
+msgid "Set the status to \"Published\""
+msgstr "Встановити статус \"Опубліковано\""
+
+#: applications/core/admin.py:21
+msgid "Set status to \"Draft\""
+msgstr "Встановити статус \"Чернетка\""
+
+#: applications/map/templates/map/index.html:5
+msgid "Home page"
+msgstr "Домашня сторінка"
+
+#: applications/map/templates/map/index.html:17
+msgid "Add marker"
+msgstr "Додати маркер"

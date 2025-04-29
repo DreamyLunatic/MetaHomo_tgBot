@@ -1,0 +1,38 @@
+{% load i18n %}
+{% load static %}
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+	<title>{% trans 'Home page' %}</title>
+
+    <link rel="stylesheet" href="{% static 'styles/leaflet_1.6.0/leaflet.css' %}">
+    <script src="{% static 'scripts/leaflet_1.6.0/leaflet.js' %}"></script>
+
+    <link rel="stylesheet" href="{% static 'styles/map.css' %}">
+
+</head>
+<body>
+
+    <div id="map"></div>
+	<button id="addMarkerButton">{% trans 'Add marker' %}</button>
+	<div class="marker-position"></div>
+
+    <script>
+        let mapLatitudeCenter = "{{ latitude_center|safe }}";
+        let mapLongitudeCenter = "{{ longitude_center|safe }}";
+        let mapZoom = "{{ map_zoom|safe }}";
+        let refresh_token = "{{ refresh_token|safe }}";
+        let access_token = "{{ access_token|safe }}";
+
+    </script>
+
+	<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <script src="{% static 'scripts/custom_marker.js' %}"></script>
+
+</body>
+</html>

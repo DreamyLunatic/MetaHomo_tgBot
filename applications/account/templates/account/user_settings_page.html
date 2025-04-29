@@ -1,0 +1,399 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "User Data Settings Page" %}{% endblock %}
+
+{% block head %}
+    <style>
+        /* *********** */
+        *,
+        :after,
+        :before {
+            box-sizing: border-box;
+            padding: 0;
+            margin: 0;
+        }
+
+        html {
+            height: 100%;
+        }
+
+        body,
+        html,
+        #map-settings {
+            width: 100%;
+            height: 100%;
+        }
+
+        body {
+            position: relative;
+            min-height: 100%;
+            margin: 0;
+            padding: 0;
+            background-color: #f1f1f1;
+        }
+
+        .content {
+            margin: 10px;
+        }
+        #map-container {
+            position: relative;
+            height: 150px;
+            width: 300px;
+        }
+
+        .center-of-map:before {
+            position: absolute;
+            content: "\271B";
+            z-index: 990;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            font-size: 4rem;
+        }
+
+        .center-of-map-description {
+            background: #fff;
+            margin: 0 !important;
+            padding: 2px 10px;
+        }
+    </style>
+
+    <link rel="stylesheet" href="{% static 'styles/leaflet_1.6.0/leaflet.css' %}">
+    <script src="{% static 'scripts/leaflet_1.6.0/leaflet.js' %}"></script>
+
+{% endblock head %}
+
+{% block content %}
+    <div class="content">
+
+        {% if user %}
+            <div>
+                <h1>{% trans 'User data:' %}</h1>
+                {% if form_save_result %}<p>{% trans 'Result:' %} {{ form_save_result }}</p>{% endif %}
+
+                <p>{% trans 'User ID:' %} {{ user.id }}</p>
+                <p>{% trans 'User First name:' %} {{ user.first_name }}</p>
+                <p>{% trans 'User Last name:' %} {{ user.last_name }}</p>
+                <p>{% trans 'Username:' %} {{ user.username }}</p>
+                <p>{% trans 'Telegram id:' %} {{ user.telegram_id }}</p>
+                <p>{% trans 'Telegram username:' %} {{ user.telegram_username }}</p>
+                <p>{% trans 'Telegram language:' %} {{ user.telegram_language }}</p>
+                <p>{% trans 'Is bot:' %} {{ user.is_bot }}</p>
+
+                <hr>
+                <p>{% trans 'Current tokens' %}</p>
+                <p>{% trans 'refresh token:' %} ...{{ refresh_token|slice:"-4:" }}</p>
+                <p>{% trans 'access token:' %} ...{{ access_token|slice:"-4:" }}</p>
+                <hr>
+
+                <p>{% trans 'Starting coordinates and zoom:' %}</p>
+                <div id="map-container">
+                    <div id="map-settings" class="center-of-map"></div>
+                    <div class="center-of-map-description"></div>
+                </div>
+                <hr>
+
+                {% if user_form %}
+                    <h2>{% trans 'Editing user data:' %}</h2>
+
+                    <form action="." method="post">
+                        {% csrf_token %}
+                        {{ user_form.as_p }}
+                        <p><input type="submit" value="Save changes"></p>
+                    </form>
+
+                {% endif %}
+                <br>
+                <hr>
+                <br>
+                <div>
+                    <p>{% trans 'Markers created by the current user:' %}</p>
+                    <br>
+                    {% for marker in user_markers %}
+                        <div>
+                            <p><b>{% trans 'Marker ID:' %}</b> {{ marker.id }}</p>
+                            <p><b>{% trans 'Time:' %}</b> {{ marker.time }}</p>
+                            <p><b>{% trans 'Message:' %}</b> {{ marker.message }}</p>
+                            <p><b>{% trans 'Latitude:' %}</b> {{ marker.latitude }}</p>
+                            <p><b>{% trans 'Longitude:' %}</b> {{ marker.longitude }}</p>
+                            <p><b>{% trans 'Photo:' %}</b> {% if marker.photo %}<img src="{{ marker.photo.url }}" width=200px>{% endif %}</p>
+                            <br>
+                        </div>
+                    {% endfor %}
+                </div>
+                <br><br>
+
+            </div>
+        {% else %}
+            <p class="errornote">{% trans 'You need to be a authenticated to access this page.' %}</p>
+            <p class="errornote">{% trans 'You need to run the "/start" command in Telegram for your authentication.' %}</p>
+        {% endif %}
+
+    </div>
+
+    <script>
+        const refresh = "{{ refresh_token|safe }}";
+        const access = "{{ access_token|safe }}";
+
+        console.log('*** refresh: ' + refresh);
+        console.log('*** access: ' + access);
+
+    </script>
+
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<script>
+    console.log('******** test 1');
+    let tg = window.Telegram.WebApp;
+    tg.expand(); //разворачиваем на все окно
+
+    const expire = new Date();
+    expire.setHours(expire.getHours() + (24 * 10));
+
+    // создаём новый pathname с префиксом языка. en - по умолчанию
+    let newLocationPathname = '/en/account/user/settings/'
+
+    if (window.location.pathname.startsWith('/en')){
+        newLocationPathname = '/en/account/user/settings/';
+    } else if (window.location.pathname.startsWith('/ru')){
+        newLocationPathname = '/ru/account/user/settings/';
+    } else if (window.location.pathname.startsWith('/uk')){
+        newLocationPathname = '/uk/account/user/settings/';
+    }
+
+    console.log('***** newLocationPathname: ' + newLocationPathname);
+    // очищаем url от токенов переданных при запуске команды "/start" из telegram
+    window.history.replaceState({}, 'Settings page', newLocationPathname);
+
+
+    if (refresh) {
+        setCookie('refreshToken', refresh, options = {expires: expire});
+        console.log('refreshToken from server: ' + getCookie('refreshToken'));
+    } else if (getCookie('refreshToken')) {
+        console.log('refreshToken from storage: ' + getCookie('refreshToken'));
+    };
+
+    if (access) {
+        setCookie('accessToken', access, options = {expires: expire});
+        console.log('accessToken from server: ' + getCookie('accessToken'));
+    } else if (getCookie('accessToken')) {
+        console.log('accessToken from storage: ' + getCookie('accessToken'));
+    };
+
+    /////////////////////////
+    //document.addEventListener("DOMContentLoaded", updateSettingsPage);
+
+    /*
+    function updateSettingsPage() {
+        console.log('********* updateSettingsPage');
+
+        fetchDataForSettingsPage('account/user/settings/')
+            .then(data => {
+                console.log('(fetchDataForSettingsPage) Полученные данные:', data);
+            })
+            .catch(error => {
+                console.error('Ошибка:', error);
+            });
+
+    }
+    */
+
+    /*
+    async function fetchDataForSettingsPage(url) {
+        //const newAccessToken = await refreshToken();
+        console.log('*******  fetchDataForSettingsPage');
+
+        try {
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    // 'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${getCookie('accessToken')}`
+                },
+            });
+
+            const responseJson = await response.json();
+
+            if (!response.ok) {
+                if (responseJson.code === 'token_not_valid' && responseJson.messages.some(msg => msg.message === 'Token is invalid or expired')) {
+                    // const newAccessToken = await refreshToken();
+                    await refreshToken();
+                    return fetchDataForSettingsPage(url);
+                } else {
+                    throw new Error(`HTTP error! Status: ${response.status}, Response: ${JSON.stringify(responseJson)}`);
+                }
+            };
+
+            return responseJson;
+        } catch (error) {
+            console.error('Ошибка при выполнении запроса:', error);
+            throw error;
+        }
+    }
+    */
+
+    async function refreshToken() {
+        const refreshToken = getCookie('refreshToken');
+        if (!refreshToken) {
+            alert('Refresh token not found.\n Enter the command "/start" in the Telegram to update Refresh Token.');
+            throw new Error('Refresh token not found');
+        }
+
+        const response = await fetch('/api/token/refresh/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ refresh: refreshToken })
+        });
+
+        if (!response.ok) {
+            const responseJson = await response.json();
+            if (responseJson) {
+                if ('code' in responseJson && 'messages' in responseJson) {
+
+                    if (responseJson.code === 'token_not_valid' && responseJson.messages.some(msg => msg.message === 'Token is invalid or expired')) {
+                        alert('Token is invalid or expired.\n Enter the command "/start" in the Telegram to update Refresh Token.');
+                    }
+
+                } else if ("Token is blacklisted" in responseJson.non_field_errors) {
+                    alert('Token is blacklisted.\n Enter the command "/start" in the Telegram to update Refresh Token.');
+                }
+
+                throw new Error(`Unable to refresh token: ${JSON.stringify(responseJson)}`);
+            } else {
+                alert('Enter the command "/start" in the Telegram to update Refresh Token.');
+            }
+        }
+
+        const data = await response.json();
+        // setCookie('accessToken', data.access, { path: '/', secure: true, 'max-age': 3600 });
+        setCookie('accessToken', data.access, {expires: expire});
+        console.log('const newAccessToken: ');
+        console.log(data.access);
+        return data.access;
+    }
+
+    ///////////// Cookie ///////////
+    function getCookie(name) {
+
+        let matches = document.cookie.match(new RegExp(
+        "(?:^|; )" + name.replace(/([.$?*|{}()[\]\\/+^])/g, '\\$1') + "=([^;]*)"
+        ));
+
+        return matches ? decodeURIComponent(matches[1]) : undefined;
+    }
+
+
+    function setCookie(name, value, options = {}) {
+
+        options = {
+            path: '/',
+            // при необходимости добавьте другие значения по умолчанию
+            ...options
+        };
+
+        if (options.expires instanceof Date) {
+            options.expires = options.expires.toUTCString();
+        }
+
+        let updatedCookie = encodeURIComponent(name) + "=" + encodeURIComponent(value);
+
+        for (let optionKey in options) {
+            updatedCookie += "; " + optionKey;
+            let optionValue = options[optionKey];
+
+            if (optionValue !== true) {
+                updatedCookie += "=" + optionValue;
+            }
+        }
+
+        document.cookie = updatedCookie;
+    }
+
+
+    function deleteCookie(name) {
+        setCookie(name, "", {
+            'max-age': -1
+        })
+    }
+
+    ////////////// map ///////////////
+    /*
+    * Coordinates of the center of the visible map
+    */
+
+    // config map
+    let config = {
+        minZoom: 3,
+        maxZoom: 18,
+    };
+    // magnification with which the map will start
+    let zoom = 8;
+    let lat = 48.56706;
+    let lng = 2.36206;
+
+    let mapCenterLatitude = document.getElementById('id_latitude_center');
+    let mapCenterLongitude = document.getElementById('id_longitude_center');
+    let mapZoom = document.getElementById('id_map_zoom');
+
+    if (mapCenterLatitude.value && mapCenterLongitude.value) {
+        lat = mapCenterLatitude.value;
+        lng = mapCenterLongitude.value;
+    }
+
+    if (mapZoom.value) {
+        zoom = mapZoom.value;
+    }
+
+    // calling map
+    const map = L.map("map-settings", config).setView([lat, lng], zoom);
+
+    // Used to load and display tile layers on the map
+    // Most tile servers require attribution, which you can set under `Layer`
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '© OpenStreetMap',
+        //'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    }).addTo(map);
+
+    // on drag end
+    map.on("dragend", updateInfo);
+
+    // on zoom end
+    map.on("zoomend", updateInfo);
+
+    // create legend
+    const coordinates = L.control({ position: "bottomleft" });
+
+    coordinates.onAdd = function () {
+        const div = L.DomUtil.create("div", "center-of-map-description");
+        L.DomEvent.disableClickPropagation(div);
+        return div;
+    };
+
+    coordinates.addTo(map);
+
+    // update info about bounds when site loaded
+    document.addEventListener("DOMContentLoaded", function () {
+        updateInfo();
+    });
+
+    const markerPlace = document.querySelector(".center-of-map-description");
+
+    function updateInfo() {
+        const { lat, lng } = map.getCenter();
+        const zoom = map.getZoom();
+        markerPlace.innerHTML = `center: ${lat.toFixed(5)}, ${lng.toFixed(5)} | zoom: ${zoom}`;
+        mapCenterLatitude.value = lat.toFixed(5);
+        mapCenterLongitude.value = lng.toFixed(5);
+        mapZoom.value = zoom;
+    }
+
+
+</script>
+
+{% endblock %}

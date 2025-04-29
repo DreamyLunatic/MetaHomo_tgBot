@@ -1,0 +1,804 @@
+{% extends 'base.html' %}
+{% load static %}
+
+
+{% block title %}Главная страница{% endblock title %}
+
+{% block head %}
+	<!-- Load Leaflet from CDN -->
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
+	integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+	crossorigin=""/>
+	<script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"
+	integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
+	crossorigin=""></script>
+
+	<!-- PopupMod Script and CSS -->
+	{% comment %} <link href="{% static 'css/leaflet-popup-modifer.css' %}" rel="stylesheet"> {% endcomment %}
+	{% comment %} <script src="{% static 'scripts/leaflet-popup-modifier.js' %}"></script> {% endcomment %}
+
+	<!-- Project Script and CSS -->
+	{% comment %} <link rel="stylesheet" href="{% static 'css/index.css' %}"> {% endcomment %}
+	{% comment %} <script src="{% static 'scripts/index.js' %}"></script> {% endcomment %}
+
+	<style type="text/css">
+		body{
+			position: relative;
+		}
+
+		html,
+		body,
+		#map{
+			height:100%;
+			width: 100%;
+			margin: 0;
+			padding: 0;
+		}
+
+		#map{
+			z-index: 0;
+		}
+
+		#randomMarker,
+		#clearRandomMarkers{
+			width: 100%;
+			margin-bottom: 10px;
+		}
+
+		.activeArea{
+			position: absolute;
+			top: 10%;
+			left: 10%;
+			height: 50%;
+			width: 50%;
+			border: 2px solid black;
+			pointer-events: none;
+		}
+
+		#addMarkerButton {
+			position: absolute;
+			top: 20px;
+			right: 20px;
+			padding: 10px;
+			z-index: 400;
+		}
+
+		.marker-position {
+			position: absolute;
+			bottom: 0;
+			left: 0;
+			z-index: 999;
+			padding: 10px;
+			font-weight: 700;
+			background-color: #fff;
+		}
+
+		.leaflet-container .leaflet-control-mouseposition {
+			background-color: rgba(255, 255, 255, 0.7);
+			box-shadow: 0 0 5px #bbb;
+			padding: 0 5px;
+			margin:0;
+			color: #333;
+			font: 11px/1.5 "Helvetica Neue", Arial, Helvetica, sans-serif;
+		}
+
+		.leaflet-popup-content {
+			overflow: auto;
+		}
+
+		.leaflet-popup-useraction-buttons,
+		.leaflet-popup-input-actions{
+			display: flex;
+			justify-content: space-between;
+			padding: 13px 19px 10px 19px;
+		}
+
+		a.leaflet-popup-remove-button,
+		a.leaflet-popup-edit-button,
+		a.leaflet-popup-send-button,
+		a.leaflet-popup-input-cancel,
+		a.leaflet-popup-input-image,
+		a.leaflet-popup-input-delete-image,
+		label.leaflet-popup-label-image,
+		a.leaflet-popup-input-save{
+			border-bottom: none;
+			text-decoration: none;
+		}
+
+		a.leaflet-popup-edit-button,
+		a.leaflet-popup-input-image,
+		a.leaflet-popup-input-delete-image,
+		label.leaflet-popup-label-image{
+			margin-left: auto;
+			text-align: center;
+		}
+
+		input.leaflet-popup-upload-image{
+			display: none;
+		}
+
+		a.leaflet-popup-send-button,
+		a.leaflet-popup-input-save{
+			margin-left: auto;
+			text-align: right;
+		}
+
+		a.leaflet-popup-remove-button:hover,
+		a.leaflet-popup-edit-button:hover,
+		a.leaflet-popup-send-button:hover,
+		a.leaflet-popup-input-cancel:hover,
+		a.leaflet-popup-input-image:hover,
+		a.leaflet-popup-input-delete-image:hover,
+		label.leaflet-popup-input-label:hover,
+		a.leaflet-popup-input-save:hover{
+			color: #0078A8;
+			text-decoration: underline;
+			cursor: pointer;
+		}
+
+		.leaflet-popup-input{
+			border: 1px solid lightgrey;
+			min-width: 160px;
+			margin: 19px 19px 0px 19px;
+			padding: 5px;
+		}
+
+		.leaflet-popup-input:focus{
+			outline: 2px solid #60b7da;
+			border: 1px solid #60b7da;
+		}
+
+		.leaflet-popup-input-ruler{
+			position: fixed;
+			top: -100px;
+			visibility: hidden;
+			font: 12px/1.5 "Helvetica Neue", Arial, Helvetica, sans-serif;
+			background-color: lightgrey;
+		}
+
+
+
+		.fixed-overlay {
+			position: fixed;
+			overflow: auto;
+			left: 0;
+			top: 0;
+			width: 100%;
+			height: 100%;
+			background-color: transparent;
+			background-repeat: no-repeat;
+			background-position: center;
+			background-size: auto 90%;
+			transform: scale(0);
+			transition: 1.2s ;
+		}
+
+		.fixed-overlay.open{
+		  transform: scale(1);
+		  transition-duration: .8s;
+		  transition-timing-function:cubic-bezier(.18,1.59,.78,1.6);
+		  animation: bc 1.2s ease-in-out forwards .8s;
+		}
+
+		//.fixed-overlay.open.move{transform: translate(-0%, -0%);}
+
+		@keyframes bc{
+		  100%{
+			background-color: rgba(0, 0, 0, .8)
+		  }
+
+		}
+		@-webkit-keyframes bc{
+		  100%{
+			background-color: rgba(0, 0, 0, .8)
+		  }
+
+		}
+
+
+		.image-popup {
+			//margin:30px;
+			float:left;
+			cursor:pointer;
+			//max-height:100px;
+		}
+
+		.image-popup:hover {
+			transform: scale(5.0);
+		}
+
+
+
+	</style>
+{% endblock head %}
+
+{% block content %}
+	<div id="map"></div>
+	<button id="addMarkerButton">Add marker</button>
+	<div class="marker-position"></div>
+	<div class="fixed-overlay"></div>
+
+
+	<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+	<script>
+		// https://leafletjs.com/reference.html
+		// https://tomickigrzegorz.github.io/leaflet-examples/
+		// https://github.com/slutske22/leaflet-popup-modifier
+		// https://codesandbox.io/s/leaflet-popup-modifier-kbuwd
+
+		let telegram_id = '';
+		let telegram_username = '';
+
+		let tg = window.Telegram.WebApp;
+		tg.expand(); //разворачиваем на все окно
+
+		const searchParams = new URLSearchParams(window.location.search);
+
+		if(searchParams.has('telegram_id')){
+			telegram_id = searchParams.get('telegram_id');
+		};
+
+		if(searchParams.has('telegram_username')){
+			telegram_username = searchParams.get('telegram_username');
+		};
+
+		let map = L.map('map').setView([51.32, 26.6], 12);
+
+		L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+			maxZoom: 19,
+			attribution: '© OpenStreetMap'
+		}).addTo(map);
+
+		{% if all_markers %}
+			let markers = {{ all_markers|safe }};
+		{% else %}
+			let markers = '';
+		{% endif %}
+
+		for (let i = 0; i < markers.length; i += 1) {
+			let isDraggable = false;
+			let marker = '';
+			let popupOptions = {
+				removable: false,
+				editable: false,
+				savable: false,
+				maxWidth: 300,
+				autoPan: false,
+				markerId: markers[i]['id'],
+				markerTime: markers[i]['time'],
+				markerTelegramUsername: markers[i]['telegram_username'],
+				markerMessage: markers[i]['message'],
+				markerPhoto: markers[i]['photo'],
+			};
+
+			let markerPhotoElement;
+
+			if (markers[i]['photo']) {
+				// markerPhotoElement = `<img class="image-popup" src="${markers[i]['photo']}" onclick="openPhoto(this)" width=200px>`;
+				markerPhotoElement = `<img class="image-popup" src="${markers[i]['photo']}" width=200px>`;
+			} else {
+				markerPhotoElement = '';
+			}
+
+			let popupData = `
+				<b>${markers[i]['time']}</b><br>
+				<i>marker id: <span class="marker_id">${markers[i]['id']}</span>, user: <span class="user">${markers[i]['telegram_username']}</span></i><br>
+				<span>latitude: ${markers[i]['latitude']}, longitude: ${markers[i]['longitude']}</span><br>
+				<span><b>${markers[i]['message']}</b></span>
+				<div name='imageEl'>${markerPhotoElement}</div>
+			`;
+
+			if (telegram_id == markers[i]['telegram_id']) {
+
+				popupOptions = {
+					removable: true,
+					editable: true,
+					savable: true,
+					maxWidth: 300,
+					autoPan: false,
+					markerId: markers[i]['id'],
+					markerTime: markers[i]['time'],
+					markerTelegramUsername: markers[i]['telegram_username'],
+					markerMessage: markers[i]['message'],
+					markerPhoto: markers[i]['photo'],
+				};
+
+				isDraggable = true;
+			};
+
+			marker = L.marker(
+				[markers[i]['latitude'], markers[i]['longitude']],
+				{
+					markerId: markers[i]['id'],
+					draggable: isDraggable,
+				}
+			)
+			.addTo(map)
+			.bindPopup(popupData, popupOptions);
+
+			// event draged marker
+			marker.on("dragend", dragedMaker);
+		};
+
+		////////////////////////////////////////////////////
+
+		const markerPlace = document.querySelector(".marker-position");
+		let latCenter;
+		let lngCenter;
+		// on drag end
+		map.on("dragend", setRentacle);
+		// second option, by dragging the map
+		map.on("dragstart", updateInfo);
+		// on zoom end
+		map.on("zoomend", setRentacle);
+		// update info about bounds when site loaded
+		document.addEventListener("DOMContentLoaded", function () {
+			const bounds = map.getBounds();
+			latCenter = (bounds._northEast.lat - (bounds._northEast.lat - bounds._southWest.lat) / 2).toFixed(5);
+			lngCenter = (bounds._northEast.lng - (bounds._northEast.lng - bounds._southWest.lng) / 2).toFixed(5);
+			updateInfo(bounds._northEast, bounds._southWest, latCenter, lngCenter);
+		});
+		// set rentacle function
+		function setRentacle() {
+			const bounds = map.getBounds();
+			latCenter = (bounds._northEast.lat - (bounds._northEast.lat - bounds._southWest.lat) / 2).toFixed(5);
+			lngCenter = (bounds._northEast.lng - (bounds._northEast.lng - bounds._southWest.lng) / 2).toFixed(5);
+			// update info about bounds
+			updateInfo(bounds._northEast, bounds._southWest, latCenter, lngCenter);
+		}
+
+		function updateInfo(north, south, latCenter, lngCenter) {
+			markerPlace.textContent =
+			  south === undefined
+				? "We are moving the map..."
+				: `SouthWest: ${south}, NorthEast: ${north}, Map Center: LatLng(${latCenter}, ${lngCenter})`;
+		}
+
+		//////////////////////////////////////////////////////
+
+		let addMarkerButton = document.getElementById('addMarkerButton');
+		addMarkerButton.addEventListener('click', addMarker);
+
+		function addMarker(e) {
+			// Add marker to map at click location
+			const buttonData = `
+				<i>marker id: <span class="marker_id"></span>, user: <span class="user">${telegram_username}</span></i><br>
+				<span>latitude: ${latCenter}, longitude: ${lngCenter}</span><br>
+			`;
+
+			let popupOptions = {
+				removable: true,
+				editable: true,
+				savable: true,
+				maxWidth: 300,
+				autoPan: false,
+				markerId: '',
+				markerTime: '',
+				markerTelegramUsername: '',
+				markerMessage: '',
+			};
+
+			const marker = new L.marker(
+				[latCenter, lngCenter],
+				{ draggable: true }
+			)
+			.addTo(map)
+			.bindPopup(
+				buttonData,
+				popupOptions,
+				//{ removable: true, editable: true, savable: true, maxWidth: 300, autoPan: false, markerId: '', message: '' }
+			);
+
+			// event draged marker
+			marker.on("dragend", dragedMaker);
+		}
+
+		/////////////// draged /////////////
+		function dragedMaker() {
+			if (this._popup.options.markerPhoto) {
+				markerPhotoElement = `<img class="image-popup" src="${this._popup.options.markerPhoto}" width=200px>`;
+			} else {
+				markerPhotoElement = '';
+			}
+
+			this._popup._content = `
+				<i>marker id: <span class="marker_id">${this._popup.options.markerId}</span>, user: <span class="user">${telegram_username}</span></i><br>
+				<span>latitude: ${(this.getLatLng().lat).toFixed(5)}, longitude: ${(this.getLatLng().lng).toFixed(5)}</span><br>
+				<span><b>${this._popup.options.markerMessage}</b></span>
+				<div name='imageEl'>${markerPhotoElement}</div>
+			`;
+		}
+
+		///////////// Send marker data to server ///////////////
+		function sendMarkerData(formData) {
+			fetch("{% url 'map:ajax_marker_create' %}", {
+				method: 'POST',
+				body: formData
+			})
+			.then(response => response.json())
+			.then(data => {
+				console.log('Success:', data);
+				alert('Send marker data successfully');
+			})
+			.catch(error => {
+				console.error('Error:', error);
+				alert('Send marker data failed');
+			});
+		}
+
+		/////////////////////////// Open full size marker photo ///////////////////////////
+		let fixedOverlayElement = document.querySelector(".fixed-overlay");
+
+		function openPhoto(e) {
+			fixedOverlayElement.style.cssText += `background-image: url(${e.src});`;
+			fixedOverlayElement.style.cssText += `transform-origin: ${e.clientX}px ${e.clientY}px;`;
+
+			fixedOverlayElement.classList.add('open');
+			//fixedOverlayElement.classList.add('move');
+			//fixedOverlayElement.addEventListener('mousemove', movePhoto);
+		}
+
+		function movePhoto(e) {
+			console.log('mousemove2-js');
+			console.dir(e);
+			let winWidth = window.innerWidth;
+			let winHeight = window.innerHeight;
+			let moveOnX = e.pageX / (winWidth / 5 );
+			let moveOnY = e.pageY / (winHeight / 5);
+
+			fixedOverlayElement.style.cssText += `transform: translate(-${moveOnX}%, -${moveOnY}%)`;
+		}
+
+		//fixedOverlayElement.addEventListener("mousemove", (e) => {
+		//	fixedOverlayElement.style.backgroundPositionX = -e.offsetX + "px";
+		//	fixedOverlayElement.style.backgroundPositionY = -e.offsetY + "px";
+		//});
+
+		fixedOverlayElement.addEventListener('click', function(){
+			//fixedOverlayElement.removeEventListener("click", movePhoto);
+			fixedOverlayElement.classList.remove('open');
+			//fixedOverlayElement.classList.remove('move');
+		});
+
+		///////////////////////////
+
+		//  Adding new options to the default options of a popup
+		L.Popup.mergeOptions({
+			removable: false,
+			editable: false,
+			sevable: false,
+		})
+
+		// Modifying the popup mechanics
+		L.Popup.include({
+
+			// modifying the _initLayout method to include edit and remove buttons, if those options are enabled
+
+			//  ----------------    Source code  start ---------------------------- //
+			// original from https://github.com/Leaflet/Leaflet/blob/master/src/layer/Popup.js
+			_initLayout: function () {
+				var prefix = 'leaflet-popup', container = this._container = L.DomUtil.create(
+					'div', prefix + ' ' + (this.options.className || '') + ' leaflet-zoom-animated'
+				);
+
+				var wrapper = this._wrapper = L.DomUtil.create('div', prefix + '-content-wrapper', container);
+				this._contentNode = L.DomUtil.create('div', prefix + '-content', wrapper);
+
+				L.DomEvent.disableClickPropagation(wrapper);
+				L.DomEvent.disableScrollPropagation(this._contentNode);
+				L.DomEvent.on(wrapper, 'contextmenu', L.DomEvent.stopPropagation);
+
+				this._tipContainer = L.DomUtil.create('div', prefix + '-tip-container', container);
+				this._tip = L.DomUtil.create('div', prefix + '-tip', this._tipContainer);
+
+				if (this.options.closeButton) {
+					var closeButton = this._closeButton = L.DomUtil.create('a', prefix + '-close-button', container);
+					closeButton.href = '#close';
+					closeButton.innerHTML = '&#215;';
+
+					L.DomEvent.on(closeButton, 'click', this._onCloseButtonClick, this);
+				}
+
+				//  ----------------    Source code end ---------------------------- //
+
+				if (this.options.editable && this.options.removable && this.options.savable){
+					var userActionButtons = this._userActionButtons = L.DomUtil.create('div', prefix + '-useraction-buttons', wrapper);
+					var removeButton = this._removeButton = L.DomUtil.create('a', prefix + '-remove-button', userActionButtons);
+					removeButton.href = '#close';
+					removeButton.innerHTML = 'Delete marker';
+					var editButton = this._editButton = L.DomUtil.create('a', prefix + '-edit-button', userActionButtons);
+					editButton.href = '#edit';
+					editButton.innerHTML = 'Edit';
+					var sendButton = this._sendButton = L.DomUtil.create('a', prefix + '-send-button', userActionButtons);
+					sendButton.href = '#send';
+					sendButton.innerHTML = 'Send data';
+					this.options.minWidth = 300;
+
+					L.DomEvent.on(removeButton, 'click', this._onRemoveButtonClick, this);
+					L.DomEvent.on(editButton, 'click', this._onEditButtonClick, this);
+					L.DomEvent.on(sendButton, 'click', this._onSendButtonClick, this);
+				}
+			},
+
+			_onRemoveButtonClick: function (e) {
+				this._source.remove();
+				L.DomEvent.stop(e);
+				var event = new CustomEvent("removeMarker", {
+					detail: { marker: this._source}
+				});
+				document.dispatchEvent(event);
+
+				if (this.options.markerId) {
+					let url = `ajax/marker/${this.options.markerId}/delete/`
+					let sendData = {
+						user: `${telegram_id}`,
+						marker_id: this.options.markerId,
+					};
+
+					$.ajax({
+						url: url,
+						type: "DELETE",
+						data: sendData,
+						success: function(data) {
+							if (data['status'] == 'success') {
+								console.log(`delete marker id=${data['id']} success`);
+								alert('Delete marker SUCCESS!');
+							}
+							else if (data['status'] == 'error') {
+								console.log(`delete marker error`);
+								alert('Delete marker ERROR!');
+							};
+						},
+					});
+				};
+			},
+
+			_onEditButtonClick: function (e) {
+				//Needs to be defined first to capture width before changes are applied
+				var inputFieldWidth = this._inputFieldWidth = this._container.offsetWidth - 2*19;
+
+				// this._contentNode.style.display = "none";
+				this._userActionButtons.style.display = "none";
+
+				var wrapper = this._wrapper;
+				var editScreen = this._editScreen = L.DomUtil.create('div', 'leaflet-popup-edit-screen', wrapper)
+				var inputField = this._inputField = L.DomUtil.create('div', 'leaflet-popup-input', editScreen);
+				inputField.setAttribute("contenteditable", "true");
+				inputField.innerHTML = this.options.markerMessage;
+				// inputField.innerHTML = this.getContent()
+
+				//  -----------  Making the input field grow till max width ------- //
+				inputField.style.width = inputFieldWidth + 'px';
+				var inputFieldDiv = L.DomUtil.get(this._inputField);
+
+				// create invisible div to measure the text width in pixels
+				var ruler = L.DomUtil.create('div', 'leaflet-popup-input-ruler', editScreen);
+				let thisStandIn = this;
+
+				// add event listener to the textinput to trigger a check
+				this._inputField.addEventListener("keydown", function(){
+				// Check to see if the popup is already at its maxWidth and that text doesnt take up whole field
+					if (thisStandIn._container.offsetWidth < thisStandIn.options.maxWidth + 38
+						&& thisStandIn._inputFieldWidth + 5 < inputFieldDiv.clientWidth){
+						ruler.innerHTML = inputField.innerHTML;
+
+						if (ruler.offsetWidth + 20 > inputFieldDiv.clientWidth){
+						console.log('expand now');
+						inputField.style.width = thisStandIn._inputField.style.width = ruler.offsetWidth + 10 + 'px';
+						thisStandIn.update();
+						}
+					}
+				}, false)
+
+
+				var inputActions = this._inputActions = L.DomUtil.create('div', 'leaflet-popup-input-actions', editScreen);
+
+				var cancelButton = this._cancelButton = L.DomUtil.create('a', 'leaflet-popup-input-cancel', inputActions);
+				cancelButton.href = '#cancel';
+				cancelButton.innerHTML = 'Cancel';
+
+				let imageLabel = this._imageLabel = L.DomUtil.create('label', 'leaflet-popup-label-image', inputActions);
+
+				var imageUpload = this._imageUpload = L.DomUtil.create('input', 'leaflet-popup-upload-image', imageLabel);
+				imageUpload.type = 'file';
+				imageUpload.accept = '.jpg, .jpeg, .png';
+				imageUpload.name = 'markerPhoto';
+				imageUpload.style = 'display: none;'
+
+				let imageButton = this._imageButton = L.DomUtil.create('a', 'leaflet-popup-input-image', imageLabel);
+				imageButton.href = "#image";
+				imageButton.innerHTML = 'Add Photo';
+
+				let deleteImageButton = this._deleteImageButton = L.DomUtil.create('a', 'leaflet-popup-input-delete-image', inputActions);
+				deleteImageButton.href = "#delete-image";
+				deleteImageButton.innerHTML = 'Delete Photo';
+
+				var saveButton = this._saveButton = L.DomUtil.create('a', 'leaflet-popup-input-save', inputActions);
+				saveButton.href = "#save";
+				saveButton.innerHTML = 'Save';
+
+				L.DomEvent.on(cancelButton, 'click', this._onCancelButtonClick, this)
+				L.DomEvent.on(imageButton, 'click', this._onAddImageButtonClick, this)
+				L.DomEvent.on(deleteImageButton, 'click', this._onDeleteImageButton, this)
+				L.DomEvent.on(saveButton, 'click', this._onSaveButtonClick, this)
+
+				this.update();
+				L.DomEvent.stop(e);
+			},
+
+			_onCancelButtonClick: function (e) {
+				L.DomUtil.remove(this._editScreen);
+				this._contentNode.style.display = "block";
+				this._userActionButtons.style.display = "flex";
+
+				this.update();
+				L.DomEvent.stop(e);
+			},
+
+			_onDeleteImageButton: function (e) {
+				elementActions = e.target.parentElement;
+				elementEditScreen = elementActions.parentElement;
+				elementContentWrapper = elementEditScreen.parentElement;
+				elementContent = elementContentWrapper.querySelector('[class="leaflet-popup-content"]');
+				imageEl = elementContent.querySelector('[name="imageEl"]');
+
+				if (imageEl) {
+					//L.DomUtil.remove(this._wrapper.children[0].children.imageEl.children[0]);
+					while (imageEl.firstChild) {
+						imageEl.removeChild(imageEl.firstChild);
+					}
+				}
+
+				this.options.markerPhoto = '';
+				this.options.isDeletePhoto = true;
+			},
+
+			_onAddImageButtonClick: function (e) {
+				// console.dir(tg);
+				// tg.showAlert(`Button Image click!`);
+				///////////
+				elementLabel = e.target.parentElement;
+				markerPhoto = elementLabel.querySelector('[name="markerPhoto"]');
+
+				elementActions = elementLabel.parentElement;
+				elementEditScreen = elementActions.parentElement;
+				elementContentWrapper = elementEditScreen.parentElement;
+				elementContent = elementContentWrapper.querySelector('[class="leaflet-popup-content"]');
+
+				imageEl = elementContent.querySelector('[name="imageEl"]');
+
+				if (!imageEl) {
+					imageEl = document.createElement("div");
+					imageEl.setAttribute('name', 'imageEl');
+					elementContent.appendChild(imageEl);
+				}
+
+				markerPhoto.addEventListener(
+					"change",
+					(e) => {
+						if (this._imageUpload.files.length > 0) {
+							imageEl.innerHTML = "";
+							const img = document.createElement("img");
+							img.classList.add('image-popup');
+							img.src = URL.createObjectURL(this._imageUpload.files[0]);
+							img.width = 250;
+							imageEl.appendChild(img);
+							this.options.markerPhoto = img.src;
+							this.options.isDeletePhoto = false;
+						}
+					},
+					false,
+				);
+
+				markerPhoto.click();
+			},
+
+			_onSaveButtonClick: function (e) {
+				let popupContent = `
+					<b>${this.options.markerTime}</b><br>
+					<i>marker id: <span class="marker_id">${this.options.markerId}</span>, user: <span class="user">${this.options.markerTelegramUsername}</span></i><br>
+					<span>latitude: ${(this.getLatLng().lat).toFixed(5)}, longitude: ${(this.getLatLng().lng).toFixed(5)}</span><br>
+				`;
+
+				let inputField = this._inputField;
+
+				if (inputField.innerHTML.length > 0){
+					popupContent = popupContent + `<span><b>${inputField.innerHTML}</b></span>`;
+				};
+
+				if ('markerPhoto' in this.options) {
+					popupContent = popupContent + `<div name='imageEl'><img src="${this.options.markerPhoto}" width=200px></div>`;
+				};
+
+				// this.setContent(this.getContent() + '<br>' + inputField.innerHTML);
+				this.setContent(popupContent);
+				this.options['markerMessage'] = inputField.innerHTML;
+
+				L.DomUtil.remove(this._editScreen);
+				this._contentNode.style.display = "block";
+				this._userActionButtons.style.display = "flex";
+
+				this.update();
+				L.DomEvent.stop(e);
+			},
+
+			_onSendButtonClick: function (e) {
+				const url = "{% url 'map:ajax_marker_create' %}";
+				const formData = new FormData();
+
+				formData.append('latitude', `${(this._latlng['lat']).toFixed(5)}`);
+				formData.append('longitude', `${(this._latlng['lng']).toFixed(5)}`);
+				formData.append('user', `${telegram_id}`);
+				formData.append('marker_id', this.options.markerId);
+				formData.append('message', this.options.markerMessage);
+
+				let isDeletePhoto = false;
+
+				if ('isDeletePhoto' in this.options && this.options.isDeletePhoto) {
+					isDeletePhoto = true;
+				};
+
+				formData.append('is_delete_photo', isDeletePhoto);
+
+				let photo;
+
+				if ('_imageUpload' in this && 'files' in this._imageUpload && this._imageUpload.files.length) {
+					photo = this._imageUpload.files[0];
+				};
+
+				if (photo && !isDeletePhoto) {
+					const reader = new FileReader();
+
+					//reader.onload = function(event) {
+					//	const arrayBuffer = event.target.result;
+					//	const blob = new Blob([arrayBuffer], { type: photo.type });
+					//	formData.append('photo', blob, photo.name);
+					//	sendMarkerData(formData);
+					//};
+					//reader.readAsArrayBuffer(photo);
+
+					reader.onload = function(event) {
+						const img = new Image();
+						img.src = event.target.result;
+
+						img.onload = function() {
+							const canvas = document.createElement('canvas');
+							const ctx = canvas.getContext('2d');
+
+							if (img.width > 800) {
+								const scaleFactor = 800 / img.width;
+								canvas.width = 800;
+								canvas.height = img.height * scaleFactor;
+							} else {
+								canvas.width = img.width;
+								canvas.height = img.height;
+							}
+
+							ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+							canvas.toBlob(function(blob) {
+								formData.append('photo', blob, photo.name);
+								sendMarkerData(formData);
+							}, photo.type);
+						};
+					};
+
+					reader.readAsDataURL(photo);
+
+				} else {
+					sendMarkerData(formData);
+				};
+
+				if (this._editScreen) {
+					L.DomUtil.remove(this._editScreen);
+				};
+				this._contentNode.style.display = "block";
+				this._userActionButtons.style.display = "flex";
+
+				this.update();
+				L.DomEvent.stop(e);
+			}
+
+		})
+	</script>
+{% endblock content %}
