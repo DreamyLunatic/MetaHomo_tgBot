@@ -2,8 +2,8 @@
 
 ## Features
 - Authorization via Telegram
-- Personal account (python manage.py createsuperuser)
-- Admin panel
+- ![Personal account](demo/PersonalAccount.gif) (python manage.py createsuperuser)
+- ![Admin panel](demo/AdminDemo.gif)
 - Lifelongency map
 
 ## Credits
