@@ -26,6 +26,37 @@ python manage.py createsuperuser
 
  ---
 
+## How to run
+
+### Cmd
+```bash
+git clone https://github.com/DreamyLunatic/MetaHomo_tgBot.git
+cd MetaHomo_tgBot
+
+python -m venv venv
+source venv/bin/activate    # for Linux/macOS
+OR
+venv\Scripts\activate.bat   # for Windows
+
+pip install -r requirements.txt
+```
+
+### Make settings inside .env
+TELEGRAM_BOT_TOKEN='insert your bot token here (use BotFather for creation)'
+DEBUG=True
+...
+
+### Make migrations
+```bash
+python manage.py migrate
+python manage.py collectstatic
+```
+
+### Run!
+```bash
+python main.py
+```
+
 ## Credits
 Big thanks to:
 - [Oleg](https://github.com/o5b) — for repository. Tg - @o5b_dev
