@@ -9,4 +9,4 @@
 ## Credits
 Big thanks to:
 - [Oleg](https://github.com/o5b) — for repository. Tg - @o5b_dev
-- [Malvina Pushkova](https://github.com/username2) — for provided [map](https://www.google.com/maps/d/viewer?mid=10tOk78kyhG7wrDUweEBk34Uog-mElPIt&ll=54.792332677644666%2C40.635587836197296&z=5). Tg - @malvina_pushkova
+- Malvina Pushkova — for provided [map](https://www.google.com/maps/d/viewer?mid=10tOk78kyhG7wrDUweEBk34Uog-mElPIt&ll=54.792332677644666%2C40.635587836197296&z=5). Tg - @malvina_pushkova
