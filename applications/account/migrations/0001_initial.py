@@ -32,7 +32,7 @@ class Migration(migrations.Migration):
                 ('telegram_id', models.BigIntegerField(blank=True, null=True, verbose_name='Telegram ID')),
                 ('telegram_username', models.CharField(blank=True, max_length=100)),
                 ('telegram_language', models.CharField(blank=True, max_length=16)),
-                ('is_bot', models.CharField(blank=True, max_length=20, verbose_name='Is Bot')),
+                ('is_bot', models.BooleanField(blank=True, null=True, max_length=16, verbose_name='Is Bot')),
                 ('raw_data', models.JSONField(blank=True, default=dict, null=True, verbose_name='Raw Telegram User data')),
                 ('groups', models.ManyToManyField(blank=True, help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.', related_name='user_set', related_query_name='user', to='auth.group', verbose_name='groups')),
                 ('user_permissions', models.ManyToManyField(blank=True, help_text='Specific permissions for this user.', related_name='user_set', related_query_name='user', to='auth.permission', verbose_name='user permissions')),

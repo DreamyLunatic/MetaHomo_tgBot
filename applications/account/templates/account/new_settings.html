@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+{% load custom_filters %} 
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transhumanist Registry</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        cyberblue: '#00f7ff',
+                        cyberpurple: '#bd00ff',
+                        darkbg: '#0a0a1a',
+                        cardbg: '#121230'
+                    },
+                    fontFamily: {
+                        'orbitron': ['Orbitron', 'sans-serif'],
+                        'exo': ['Exo 2', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: radial-gradient(ellipse at center, #0a0a1a 0%, #000010 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .leaflet-popup-content {
+            max-width: 250px;     /* Устанавливает максимальную ширину */
+            white-space: normal;  /* Позволяет перенос строк */
+            word-wrap: break-word; /* Переносит длинные слова */
+        }
+        
+        .cyber-glow {
+            text-shadow: 0 0 10px #00f7ff, 0 0 20px #00f7ff;
+        }
+        
+        .cyber-border {
+            border: 1px solid #00f7ff;
+            box-shadow: 0 0 10px rgba(0, 247, 255, 0.3), inset 0 0 10px rgba(0, 247, 255, 0.3);
+        }
+        
+        .cyber-input {
+            background: rgba(10, 15, 30, 0.7);
+            border: 1px solid #4a4a8a;
+            color: #00f7ff;
+            transition: all 0.3s;
+        }
+        
+        .cyber-input:focus {
+            border-color: #00f7ff;
+            box-shadow: 0 0 10px rgba(0, 247, 255, 0.5);
+            outline: none;
+        }
+        
+        .cyber-button {
+            background: linear-gradient(45deg, #00f7ff, #bd00ff);
+            color: #0a0a1a;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .cyber-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(189, 0, 255, 0.4);
+        }
+        
+        .cyber-card {
+            background: rgba(18, 18, 48, 0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .cyber-card::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #00f7ff, #bd00ff, #00f7ff);
+            z-index: -1;
+            border-radius: 12px;
+        }
+        
+        .glowing-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #00f7ff;
+            box-shadow: 0 0 10px 3px #00f7ff;
+            position: absolute;
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 247, 255, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 247, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 247, 255, 0); }
+        }
+        
+        .map-container {
+            height: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        #map {
+            height: 100%;
+            width: 100%;
+            background: #0a0a1a;
+        }
+        
+        .cyber-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .cyber-scrollbar::-webkit-scrollbar-track {
+            background: rgba(10, 15, 30, 0.5);
+        }
+        
+        .cyber-scrollbar::-webkit-scrollbar-thumb {
+            background: linear-gradient(#00f7ff, #bd00ff);
+            border-radius: 4px;
+        }
+        
+        .user-card {
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .user-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 247, 255, 0.2);
+        }
+        
+        .grid-pattern {
+            background-image: 
+                linear-gradient(rgba(0, 247, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 247, 255, 0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+    </style>
+</head>
+<body class="font-exo text-white">
+    <!-- Glowing dots decoration -->
+    <div class="glowing-dot top-1/4 left-10 pulse"></div>
+    <div class="glowing-dot top-1/3 right-20"></div>
+    <div class="glowing-dot bottom-1/4 left-1/4 pulse"></div>
+    <div class="glowing-dot bottom-10 right-1/3"></div>
+    
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="text-center mb-12">
+            <h1 class="text-3xl md:text-6xl font-orbitron font-bold mb-4 cyber-glow">
+                <i class="fas fa-brain mr-3"></i>{{ sections.header_title }}
+            </h1>
+            <p class="text-cyberblue max-w-2xl mx-auto text-lg">
+                {{ sections.header_description }}
+            </p>
+        </header>
+        
+        <div class="max-w-4xl mx-auto px-4 py-8 space-y-8">
+            <form method="post" action="." class="space-y-4">
+
+                <!-- Left Column - Form and User List -->
+                <div class="space-y-8">
+                    <!-- Registration Form -->
+                    <div class="cyber-card p-6 grid-pattern">
+                        <h2 class="text-2xl font-orbitron mb-6 text-cyberblue">
+                            <i class="fas fa-user-plus mr-2"></i> Everything we know about you
+                        </h2>
+
+                        {% csrf_token %}
+
+                        <h1>{{ sections.user_data }}</h1>
+
+                        <div>
+                            <label class="block mb-2 text-cyberblue">{{ user_form.telegram_id.label }}</label>
+                            {{ user_form.telegram_id }}
+                            {% if user_form.telegram_id.help_text %}
+                                <p class="text-xs text-green-300 mt-1">{{ user_form.telegram_id.help_text }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label class="block mb-2 text-cyberblue">{{ user_form.telegram_username.label }}</label>
+                            {{ user_form.telegram_username }}
+                            {% if user_form.telegram_username.help_text %}
+                                <p class="text-xs text-green-300 mt-1">{{ user_form.telegram_username.help_text }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label class="block mb-2 text-cyberblue">{{ user_form.telegram_language.label }}</label>
+                            {{ user_form.telegram_language }}
+                            {% if user_form.telegram_language.help_text %}
+                                <p class="text-xs text-green-300 mt-1">{{ user_form.telegram_language.help_text }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label class="block mb-2 text-cyberblue">{{ user_form.is_bot.label }}</label>
+                            {{ user_form.is_bot }}
+                            {% if user_form.is_bot.help_text %}
+                                <p class="text-xs text-green-300 mt-1">{{ user_form.is_bot.help_text }}</p>
+                            {% endif %}
+                        </div>
+
+                        <h2 class="text-2xl font-orbitron mb-6 text-cyberblue">{{ sections.profile_info }}</h2>
+
+                        <div>
+                            <label class="block mb-2 text-cyberblue">{{ user_form.first_name.label }}</label>
+                            {{ user_form.first_name }}
+                            {% if user_form.first_name.help_text %}
+                                <p class="text-xs text-green-300 mt-1">{{ user_form.first_name.help_text }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label class="block mb-2 text-cyberblue">{{ user_form.last_name.label }}</label>
+                            {{ user_form.last_name }}
+                            {% if user_form.last_name.help_text %}
+                                <p class="text-xs text-green-300 mt-1">{{ user_form.last_name.help_text }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label class="block mb-2 text-cyberblue">{{ user_form.email.label }}</label>
+                            {{ user_form.email }}
+                            {% if user_form.email.help_text %}
+                                <p class="text-xs text-green-300 mt-1">{{ user_form.email.help_text }}</p>
+                            {% endif %}
+                        </div>
+
+                        <h2 class="text-2xl font-orbitron mb-6 text-cyberblue">{{ sections.description }}</h2>
+
+                        <div>
+                            <label class="block mb-2 text-cyberblue">{{ user_form.description.label }}</label>
+                            {{ user_form.description }}
+                            {% if user_form.description.help_text %}
+                                <p class="text-xs text-green-300 mt-1">{{ user_form.description.help_text }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label class="block mb-2 text-cyberblue">{{ user_form.specialisation.label }}</label>
+                            {{ user_form.specialisation }}
+                            {% if user_form.specialisation.help_text %}
+                                <p class="text-xs text-green-300 mt-1">{{ user_form.specialisation.help_text }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    
+                    <!-- User List -->
+                    <div class="cyber-card p-6">
+                        <h2 class="text-2xl font-orbitron mb-4 text-cyberblue">
+                            <i class="fas fa-network-wired mr-2"></i>Registered Transhumans
+                        </h2>
+                        <div class="cyber-scrollbar max-h-96 overflow-y-auto pr-2 space-y-4">
+                            {% for user in first_marker_users %}
+                                {% with user_markers_dict|get_item:user.id as marker_data %}
+                                    {% if marker_data %}
+                                        {% with marker_data.color as user_color %}
+                                            <div class="user-card cyber-border p-4 rounded-lg bg-cardbg" style="border-left: 6px solid {{ user_color }};">
+                                                <div class="flex justify-between items-center">
+                                                    <div class="max-w-xs overflow-hidden">
+                                                        <h3 class="font-bold text-lg break-words truncate">
+                                                            {{ user.get_full_name|default:user.username }}
+                                                        </h3>
+                                                        <p class="text-cyberblue break-words truncate">
+                                                            {{ user.specialisation|default:"Unknown Module" }}
+                                                        </p>
+                                                    </div>
+                                                    <span class="text-xs px-2 py-1 rounded whitespace-nowrap"
+                                                        style="background-color: {{ user_color }}; color: white;">
+                                                        {{ user.first_marker_time|date:"Y-m-d H:i" }}
+                                                    </span>
+                                                </div>
+                                                <p class="mt-2 text-sm opacity-80 break-words overflow-hidden max-h-24">
+                                                    {{ user.description|default:"No description upload yet..." }}
+                                                </p>
+                                            </div>
+                                        {% endwith %}
+                                    {% endif %}
+                                {% endwith %}
+                            {% empty %}
+                                <p class="text-sm text-gray-400">No data</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                </div>
+                
+                <div class="cyber-card p-4 h-[650px] flex flex-col">
+                    <!-- Header -->
+                    <h2 class="text-2xl font-orbitron text-cyberblue">
+                        <i class="fas fa-globe-americas mr-2"></i>Transhumanist Network
+                    </h2>
+                    
+                    <h2 class="text-2xl font-orbitron mb-6 text-cyberblue">{{ sections.map_settings }}</h2>
+
+                    <div>
+                        <label class="block mb-2 text-cyberblue">{{ marker_form.latitude.label }}</label>
+                        {{ marker_form.latitude }}
+                        {% if marker_form.latitude.help_text %}
+                            <p class="text-xs text-green-300 mt-1">{{ marker_form.latitude.help_text }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block mb-2 text-cyberblue">{{ marker_form.longitude.label }}</label>
+                        {{ marker_form.longitude }}
+                        {% if marker_form.longitude.help_text %}
+                            <p class="text-xs text-green-300 mt-1">{{ marker_form.longitude.help_text }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Map: grows to take remaining space -->
+                    <div class="map-container relative flex-1">
+                        <div id="map" class="absolute inset-0"></div>
+                    </div>
+                </div>
+                <div class="pt-4">
+                    <button type="submit" class="w-full py-3 px-4 cyber-button rounded font-orbitron text-lg">
+                        <i class="fas fa-microchip mr-2"></i>{{ sections.save_changes }}
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Footer -->
+        <footer class="mt-12 pt-8 border-t border-cyberblue border-opacity-20 text-center text-sm text-gray-400">
+            <div class="flex justify-center space-x-6 mb-4">
+                <a href="/en/" class="hover:text-cyberblue" target="_blank" rel="noopener noreferrer">
+                    <i class="fas fa-globe"></i> Map
+                </a>
+                <a href="https://t.me/ProjectAGCT" class="hover:text-cyberblue" target="_blank" rel="noopener noreferrer">
+                    <i class="fas fa-users"></i> Community
+                </a>
+            </div>
+            <p>Transhumanist Registry © 2025 | Advancing human potential through voluntary data contribution</p>
+            <p class="mt-2">The human body is the first machine we learn to operate, but not the last.</p>
+        </footer>
+    </div>
+
+    {% block scripts %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const latInput = document.getElementById('id_latitude');
+            const lngInput = document.getElementById('id_longitude');
+
+            // Начальные координаты из формы или дефолт
+            const lat = latInput && latInput.value ? parseFloat(latInput.value) : 40.7128;
+            const lng = lngInput && lngInput.value ? parseFloat(lngInput.value) : -74.0060;
+
+            // Инициализация карты с красивыми тайлами и эффектом worldCopyJump
+            const map = L.map('map', { worldCopyJump: true }).setView([lat, lng], 3);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                className: 'map-tiles'
+            }).addTo(map);
+            
+            // Слой для маркеров
+            window.markerGroup = L.layerGroup().addTo(map);
+
+            // Цвет для исходного маркера
+            const initialMarkerColor = '#00f7ff';
+
+            // Создание кастомной иконки
+            function createCustomIcon(color) {
+                return L.divIcon({
+                    className: 'custom-marker',
+                    html: `<div style="background: ${color}; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 10px ${color};"></div>`,
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12]
+                });
+            }
+
+            // Добавляем исходный маркер и его клоны на ±2 мира
+            const wraps = [-2, -1, 0, 1, 2];
+            wraps.forEach(wrap => {
+                const wrappedLng = lng + wrap * 360;
+                L.marker([lat, wrappedLng], { icon: createCustomIcon(initialMarkerColor) })
+                    .addTo(window.markerGroup)
+                    .bindPopup('Your Current Location');
+            });
+
+            // Добавляем маркеры других пользователей
+            const userMarkers = JSON.parse('{{ user_markers_json|escapejs }}');
+
+            userMarkers.forEach(user => {
+                wraps.forEach(wrap => {
+                    const wrappedLng = user.lng + wrap * 360;
+
+                    L.marker([user.lat, wrappedLng], {
+                        icon: createCustomIcon(user.color)
+                    })
+                    .addTo(window.markerGroup)
+                    .bindPopup(`
+                        <strong>${user.full_name || user.username}</strong><br>
+                        <em>${user.specialisation || 'Unknown Module'}</em><br>
+                        ${user.description || ''}
+                    `);
+                });
+            });
+
+            // Обработчик клика по карте
+            map.on('click', function (e) {
+                const { lat, lng } = e.latlng;
+
+                // Очищаем старые маркеры
+                window.markerGroup.clearLayers();
+
+                // Привести долготу к [-180,180] перед сохранением в поля формы
+                let fixedLng = ((lng + 180) % 360 + 360) % 360 - 180;
+                latInput.value = lat.toFixed(5);
+                lngInput.value = fixedLng.toFixed(5);
+
+                // Добавить новые маркеры на все копии мира
+                wraps.forEach(wrap => {
+                    const wrappedLng = fixedLng + wrap * 360;
+                    L.marker([lat, wrappedLng], { icon: createCustomIcon(initialMarkerColor) })
+                        .addTo(window.markerGroup)
+                        .bindPopup('New Location');
+                });
+            });
+
+            // Исправление размеров при рендере в скрытых контейнерах
+            setTimeout(() => map.invalidateSize(), 500);
+        });
+    </script>
+    {% endblock %}
+
+</body>
+</html>

@@ -1,38 +1,191 @@
-{% load i18n %}
 {% load static %}
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Карта Lifelongency</title>
+  <link rel="icon" href="{% static 'images/favicon.png' %}" type="image/png" />
 
-	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-	<title>{% trans 'Home page' %}</title>
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
 
-    <link rel="stylesheet" href="{% static 'styles/leaflet_1.6.0/leaflet.css' %}">
-    <script src="{% static 'scripts/leaflet_1.6.0/leaflet.js' %}"></script>
+  <style>
+    html, body, #map {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
 
-    <link rel="stylesheet" href="{% static 'styles/map.css' %}">
+    .custom-marker div {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid white;
+      box-shadow: 0 0 10px var(--color);
+      background: var(--color);
+    }
 
+    .leaflet-popup-content {
+        max-width: 250px;     /* Устанавливает максимальную ширину */
+        white-space: normal;  /* Позволяет перенос строк */
+        word-wrap: break-word; /* Переносит длинные слова */
+    }
+    
+    .popup-container {
+      background: rgba(15, 15, 30, 0.95);
+      border-radius: 12px;
+      padding: 10px;
+      border: 1px solid rgba(0, 255, 255, 0.2);
+      box-shadow: 0 0 12px rgba(0, 255, 255, 0.3);
+      font-family: 'Segoe UI', sans-serif;
+      color: #e0f0ff;
+    }
+
+    .popup-name {
+      font-weight: bold;
+      font-size: 1.1em;
+      color: #00ffe7;
+      text-shadow: 0 0 5px #00ffe7;
+    }
+
+    .popup-username {
+      color: #9999ff;
+      font-style: italic;
+      margin-top: 4px;
+    }
+
+    .popup-special {
+      color: #ff8eff;
+      font-weight: 500;
+      margin-top: 2px;
+      text-shadow: 0 0 4px #ff8eff;
+    }
+
+    .popup-description {
+      color: #cccccc;
+      margin-top: 6px;
+      font-size: 0.95em;
+    }
+  </style>
 </head>
 <body>
+  <div id="map"></div>
 
-    <div id="map"></div>
-	<button id="addMarkerButton">{% trans 'Add marker' %}</button>
-	<div class="marker-position"></div>
+  <!-- JS libraries -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/@tmcw/togeojson"></script>
+  <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
 
-    <script>
-        let mapLatitudeCenter = "{{ latitude_center|safe }}";
-        let mapLongitudeCenter = "{{ longitude_center|safe }}";
-        let mapZoom = "{{ map_zoom|safe }}";
-        let refresh_token = "{{ refresh_token|safe }}";
-        let access_token = "{{ access_token|safe }}";
+  <script>
+    const map = L.map('map', { worldCopyJump: true }).setView([48.72672, 2.37854], 3);
 
-    </script>
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
 
-	<script src="https://telegram.org/js/telegram-web-app.js"></script>
+    // const markerGroup = L.markerClusterGroup();
+    // map.addLayer(markerGroup);
 
-    <script src="{% static 'scripts/custom_marker.js' %}"></script>
+    const wraps = [-2, -1, 0, 1, 2];
 
+    // Функция для создания кастомной иконки
+    function createCustomIcon(color = '#2BFF00') {
+      return L.divIcon({
+        className: 'custom-marker',
+        html: `<div style="--color: ${color};"></div>`,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+      });
+    }
+
+    // Отдельные слои
+    const kmlLayerGroup = L.markerClusterGroup();
+    const dbLayerGroup = L.markerClusterGroup();
+
+    map.addLayer(kmlLayerGroup);
+    map.addLayer(dbLayerGroup);
+
+    // Чекбоксы
+    const overlays = {
+      "📍 Possible members (auto-algoritm)": kmlLayerGroup,
+      "👤 Longevity members (tg bot)": dbLayerGroup
+    };
+    L.control.layers(null, overlays).addTo(map);
+
+    // Загрузка KML
+    fetch("{% static 'maps/Lifelongency_map_geocoded.kml' %}")
+      .then(res => res.text())
+      .then(kmlText => {
+        const kmlDoc = new DOMParser().parseFromString(kmlText, 'application/xml');
+        const geojson = toGeoJSON.kml(kmlDoc);
+
+        L.geoJSON(geojson, {
+          pointToLayer(feature, latlng) {
+            const layers = [];
+            wraps.forEach(wrap => {
+              const wrappedLng = latlng.lng + wrap * 360;
+              const marker = L.marker([latlng.lat, wrappedLng], {
+                icon: createCustomIcon('#007bff') // Пример: синий
+              });
+              layers.push(marker);
+            });
+            return L.layerGroup(layers);
+          },
+          onEachFeature(feature, layerGroup) {
+            const props = feature.properties || {};
+            const popup = `<strong>${props.name || ''}</strong><br>${props.description || ''}`;
+            layerGroup.eachLayer(marker => marker.bindPopup(popup));
+          }
+        }).eachLayer(layerGroup => {
+          kmlLayerGroup.addLayer(layerGroup);
+        });
+
+        if (kmlLayerGroup.getBounds().isValid()) {
+          map.fitBounds(kmlLayerGroup.getBounds());
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert('Ошибка загрузки KML: ' + err.message);
+      });
+
+    // Загрузка данных пользователей из Django
+    fetch('/users-coordinates/')
+      .then(res => res.json())
+      .then(data => {
+        // Если Django вернул объект, а не массив — преобразуем
+        const users = Object.values(data);
+        users.forEach(user => {
+          wraps.forEach(wrap => {
+            const wrappedLng = user.lng + wrap * 360;
+            const marker = L.marker([user.lat, wrappedLng], {
+              icon: createCustomIcon(user.color || '#2BFF00')
+            });
+            const popup = `
+              <div class="popup-container">
+                <div class="popup-name">${user.full_name || user.username}</div>
+                <div class="popup-username">@${user.telegram_username || 'Unknown Username'}</div>
+                <div class="popup-special">${user.specialisation || 'Unknown Module'}</div>
+                <div class="popup-description">${user.description || ''}</div>
+              </div>
+            `;
+            marker.bindPopup(popup);
+            dbLayerGroup.addLayer(marker);
+          });
+        });
+
+        if (dbLayerGroup.getBounds().isValid()) {
+          map.fitBounds(dbLayerGroup.getBounds());
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert('Ошибка загрузки пользователей: ' + err.message);
+      });
+
+  </script>
 </body>
 </html>

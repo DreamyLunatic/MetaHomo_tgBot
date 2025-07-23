@@ -1,20 +1,14 @@
-import sqlite3
-from datetime import datetime
 import os
 import threading
 from typing import Any, Dict
 import urllib
 import django
-from django.conf import settings
 from django.utils.translation import gettext as _
 
-from asgiref.wsgi import WsgiToAsgi
+from django.core.asgi import get_asgi_application
+
 import uvicorn
 import asyncio
-
-from flask import Flask
-
-from pathlib import Path
 
 from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
@@ -25,77 +19,24 @@ django.setup()
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
 from asgiref.sync import sync_to_async
+from applications.account.models import MapMarker
 
 from pyngrok import ngrok, conf
 
 # опционально: регион по умолчанию (eu, us и т.п.)
 conf.get_default().region = "eu"
 
-# порт берём из окружения (Render назначает его в $PORT)
+# берём из окружения (.env файл)
 port = int(os.getenv('PORT', 5000))
+api_token = os.getenv('TELEGRAM_BOT_TOKEN')
 
-# поднимаем HTTP-туннель на тот же порт
+# поднимаем HTTP-туннель
 tunnel = ngrok.connect(port, bind_tls=True)
 DJANGO_DOMAIN_HOST = tunnel.public_url
 
 print(f"🔗 ngrok tunnel established: {DJANGO_DOMAIN_HOST}")
 
-api_token = os.getenv('TELEGRAM_BOT_TOKEN')
-
-# Connect to SQLite database
-def get_db_connection():
-    conn = sqlite3.connect('users.db', check_same_thread=False)
-    return conn
-
-# Initialize database schema and perform migrations
-def init_db():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    # Ensure base table exists
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            user_id INTEGER PRIMARY KEY
-        )
-    ''')
-    conn.commit()
-
-    # Desired columns, their types/definitions, and default values for existing rows
-    desired_columns = {
-        'first_name':   {'definition': 'TEXT',          'default': "''"},
-        'last_name':    {'definition': 'TEXT',          'default': "''"},
-        'username':     {'definition': 'TEXT',          'default': "''"},
-        'latitude':     {'definition': 'REAL',          'default': '0'},
-        'longitude':    {'definition': 'REAL',          'default': '0'},
-        'language':     {'definition': 'TEXT',          'default': "'en'"},
-        'created_at':   {'definition': 'TEXT',          'default': f"'{datetime.now().isoformat()}'"},
-        'updated_at':   {'definition': 'TEXT',          'default': f"'{datetime.now().isoformat()}'"},
-        'is_bot':      {'definition': 'BOOLEAN',       'default': '0'},
-    }
-
-    # Fetch existing columns
-    cursor.execute("PRAGMA table_info(users)")
-    existing = {row[1] for row in cursor.fetchall()}
-
-    # Track newly added columns to backfill defaults
-    newly_added = []
-    for col, props in desired_columns.items():
-        if col not in existing:
-            # Add missing column
-            alter_sql = f"ALTER TABLE users ADD COLUMN {col} {props['definition']}"
-            cursor.execute(alter_sql)
-            newly_added.append(col)
-    conn.commit()
-
-    # Backfill default values for existing users for newly added columns
-    for col in newly_added:
-        default_val = desired_columns[col]['default']
-        update_sql = f"UPDATE users SET {col} = {default_val} WHERE {col} IS NULL"
-        cursor.execute(update_sql)
-    conn.commit()
-    return conn, conn.cursor()
-
-# Initialize DB and get cursor
-conn, cursor = init_db()
+User = get_user_model()
 
 @sync_to_async
 def get_tokens_for_user(user):
@@ -106,52 +47,28 @@ def get_tokens_for_user(user):
         'access': str(refresh.access_token),
     }
 
-async def create_user(telegram_id, defaults):
-    User = get_user_model()
-    user, created = await User.objects.aget_or_create(telegram_id=telegram_id, defaults=defaults)
-    return user, created
+@sync_to_async
+def get_first_marker(user):
+    return MapMarker.objects.filter(user=user).first()
 
 def add_get_params_to_url(url: str, user_data: Dict[str, Any]):
     query_string = urllib.parse.urlencode(user_data)
     return f"{url}?{query_string}"
 
-# Utility to get user's language (default 'en')
-def get_user_language(user_id: int) -> str:
-    cursor.execute('SELECT language FROM users WHERE user_id = ?', (user_id,))
-    row = cursor.fetchone()
-    return row[0] if row and row[0] else 'en'
-
 # Utility to set user's language
+@sync_to_async
 def set_user_language(user_id: int, lang: str) -> None:
-    cursor.execute(
-        'UPDATE users SET language = ?, updated_at = ? WHERE user_id = ?',
-        (lang, datetime.now().isoformat(), user_id)
-    )
-    conn.commit()
+    user = User.objects.get(telegram_id=user_id)
+    user.telegram_language = lang
+    user.save()
 
-# Handler for the /start command: registers user and sends a button to request location
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user = update.effective_user
-    # Insert or ignore basic user info (without location/language)
-    cursor.execute(
-        '''INSERT OR IGNORE INTO users
-           (user_id, first_name, last_name, username, created_at, updated_at, is_bot)
-           VALUES (?, ?, ?, ?, ?, ?, ?)''',
-        (user.id, user.first_name, user.last_name, user.username, datetime.now().isoformat(), datetime.now().isoformat(), user.is_bot)
-    )
-    conn.commit()
+# Fetching or creating a user in the database
+async def create_user(telegram_id, defaults):
+    User = get_user_model()
+    user, created = await User.objects.aget_or_create(telegram_id=telegram_id, defaults=defaults)
+    return user, created
 
-    # Ask for language selection first
-    lang_buttons = [[KeyboardButton(text="English"), KeyboardButton(text="Русский")]]
-    lang_markup = ReplyKeyboardMarkup(lang_buttons, resize_keyboard=True, one_time_keyboard=True)
-    await update.message.reply_text(
-        text="Please choose your language / Пожалуйста, выберите язык:",
-        reply_markup=lang_markup
-    )
-
-# Handler for selecting language
-async def handle_language(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user_data = update.effective_user
+async def get_user(user_data: Update.effective_user) -> None:
     user_info = {
         'username': f'{user_data.id}',
         'telegram_id': user_data.id,
@@ -165,6 +82,24 @@ async def handle_language(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     user, created = await create_user(telegram_id=user_data.id, defaults=user_info)
 
+    return user, created
+
+# Handler for the /start command: registers user and sends a button to request location
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await get_user(update.effective_user)
+
+    # Ask for language selection
+    lang_buttons = [[KeyboardButton(text="English"), KeyboardButton(text="Русский")]]
+    lang_markup = ReplyKeyboardMarkup(lang_buttons, resize_keyboard=True, one_time_keyboard=True)
+    await update.message.reply_text(
+        text="Please choose your language / Пожалуйста, выберите язык:",
+        reply_markup=lang_markup
+    )
+
+# Handler for selecting language
+async def handle_language(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user, created = await get_user(update.effective_user)
+
     url_params = {}
 
     if user:
@@ -174,13 +109,15 @@ async def handle_language(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     text = update.message.text.lower()
     lang = 'en' if 'english' in text else 'ru'
-    set_user_language(user.id, lang)
-    # Proceed to ask location in chosen language
+    await set_user_language(user.telegram_id, lang)
+
+    # Some translations
     location_label = "Share location" if lang == 'en' else "Поделиться геолокацией"
     info_label = "Info" if lang == 'en' else "Информация"
     map_label = "Open Map" if lang == 'en' else "Открыть карту"
     settings_label = "Open Settings" if lang == 'en' else "Открыть настройки"
     prompt = "Hi! Please share your location:" if lang == 'en' else "Привет! Поделитесь, пожалуйста, своей геолокацией:" 
+
     location_button = KeyboardButton(text=location_label, request_location=True)
     info_button = KeyboardButton(text=info_label)
     open_map_button = KeyboardButton(
@@ -208,8 +145,8 @@ async def handle_language(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 # Handler for selecting language
 async def handle_info(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user = update.effective_user
-    lang = get_user_language(user.id)
+    user, created = await get_user(update.effective_user)
+    lang = user.telegram_language or 'en' 
     if lang == 'en':
         info_text = (
             "This bot registers users and stores their location.\n"
@@ -226,45 +163,50 @@ async def handle_info(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
 # Handler for incoming location messages: updates user location in DB
 async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user = update.effective_user
+    user, created = await get_user(update.effective_user)
+    marker = await get_first_marker(user)
     location = update.message.location
-    lang = get_user_language(user.id)
+    lang = user.telegram_language or 'en'
     if location:
         lat = location.latitude
         lon = location.longitude
-        cursor.execute(
-            'UPDATE users SET latitude = ?, longitude = ?, updated_at = ? WHERE user_id = ?',
-            (lat, lon, datetime.now().isoformat(), user.id)
-        )
-        conn.commit()
+        marker.latitude = lat
+        marker.longitude = lon
+        await sync_to_async(user.save)()
+        await sync_to_async(marker.save)()
         success = (
-            f"Thanks for sharing your location!\nLatitude: {lat}\nLongitude: {lon}" if lang=='en'
-            else f"Спасибо за геолокацию!\nШирота: {lat}\nДолгота: {lon}"
+            f"Спасибо за геолокацию!\nШирота: {lat}\nДолгота: {lon}" if lang=='ru'
+            else f"Thanks for sharing your location!\nLatitude: {lat}\nLongitude: {lon}"
         )
         await update.message.reply_text(text=success)
     else:
-        error = "Sorry, I couldn't get your location." if lang=='en' else "Не удалось получить вашу геолокацию."
+        error = "Не удалось получить вашу геолокацию." if lang=='ru' else "Sorry, I couldn't get your location."
         await update.message.reply_text(text=error)
 
 # Optional: show list of registered users
 async def list_users(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-   # Fetch all users
-    cursor.execute('SELECT * FROM users')
-    users = cursor.fetchall()
+    users = await sync_to_async(list)(User.objects.all())
+
     if not users:
         await update.message.reply_text("No users in database yet.")
         return
 
-    # Retrieve column names in order
-    cursor.execute("PRAGMA table_info(users)")
-    column_names = [col[1] for col in cursor.fetchall()]
-
     # Build message lines
     msg_lines = ["Registered users:"]
     for user in users:
-        for idx, value in enumerate(user):
-            msg_lines.append(f"{column_names[idx]}: {value};")
+        marker = await get_first_marker(user)
+        msg_lines.append(
+            f"ID: {user.id}; \n"
+            f"Telegram ID: {user.telegram_id}; \n"
+            f"Username: {user.telegram_username}; \n"
+            f"First Name: {user.first_name}; \n"
+            f"Last Name: {user.last_name}; \n"
+            f"Language: {user.telegram_language}; \n"
+            f"Latitude: {marker.latitude if marker else 'N/A'}; \n"
+            f"Longitude: {marker.longitude if marker else 'N/A'};"
+        )
         msg_lines.append("")  # blank line between users
+
     msg_lines.append(f"Total users: {len(users)}")
 
     await update.message.reply_text("\n".join(msg_lines))
@@ -272,7 +214,7 @@ async def list_users(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 # Handler for other text messages
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
-    lang = get_user_language(user.id)
+    lang = user.telegram_language or 'en'
     default = (
         "Use /start to register, set language and share your location."
         if lang=='en' else
@@ -304,21 +246,15 @@ def main() -> None:
     bot_app.run_polling(stop_signals=None)
 
 
-# Flask-заглушка
-web_app = Flask(__name__)
-# wrap the Flask app in a little ASGI shim:
-asgi_app = WsgiToAsgi(web_app)
+asgi_app = get_asgi_application()
 
-@web_app.route('/')
-def index():
-    return "Bot is running!", 200
 
 if __name__ == '__main__':
     bot_thread = threading.Thread(target=main, daemon=True)
     bot_thread.start()
 
     uvicorn.run(
-        asgi_app,                        # это наш ASGI-обёрнутый Flask
-        host="0.0.0.0",
-        port=int(os.getenv('PORT', 5000)),
-    )
+    asgi_app,
+    host="0.0.0.0",
+    port=port,
+)

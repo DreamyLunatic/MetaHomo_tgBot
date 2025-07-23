@@ -22,9 +22,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'ch8+)=(1m*xrxtw1yx^!p1lv&b3fx!79)l#cvx5801gclshr5o')
-DEBUG = bool(int(os.getenv('DJANGO_DEBUG', 0)))
-DEBUG = True    # for local dev
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'Insert your secret key here')
+DEBUG = bool(int(os.getenv('DJANGO_DEBUG', 0))) # True for local dev
 ALLOWED_HOSTS = [os.getenv('DJANGO_ALLOWED_HOSTS', '*')]
 ADMINS = (('Admin', 'admin.com'),)
 
@@ -50,7 +49,6 @@ THIRD_APPS = [
 ]
 
 CUSTOM_APPS = [
-    'applications.core',
     'applications.account',
     'applications.map',
 ]
@@ -95,24 +93,14 @@ AUTH_USER_MODEL = 'account.User'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-if DEBUG:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-        }
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.environ['POSTGRES_DB'],
-            'USER': os.environ['POSTGRES_USER'],
-            'PASSWORD': os.environ['POSTGRES_PASSWORD'],
-            'HOST': os.environ['POSTGRES_HOST'],
-            'PORT': os.environ['POSTGRES_PORT'],
-        }
-    }
+}
+
 
 
 # Password validation
@@ -155,17 +143,6 @@ LOCALE_PATHS = [
     os.path.join(BASE_DIR, 'locale')
 ]
 
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.0/howto/static-files/
-
-# STATICFILES_DIRS = (os.path.join(BASE_DIR, 'static'),)  # здесь collectstatic также будет искать файлы
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')          # сюда collectstatic поместит найденные файлы
-# STATIC_URL = 'static/'
-# MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-# MEDIA_URL = 'media/'
-
-
 # Absolute filesystem path to the directory that will hold user-uploaded files. Example: "/var/www/example.com/media/"
 MEDIA_ROOT = os.getenv('DJANGO_MEDIA_ROOT', '')
 
@@ -175,17 +152,11 @@ MEDIA_URL = os.getenv('DJANGO_MEDIA_URL', 'media/')
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_URL = '/static/'
+STATIC_URL = '/staticfiles/'
 
-# if DEBUG:
-#     STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
-# else:
-#     # STATIC_ROOT = os.getenv('DJANGO_STATIC_ROOT')
-#     STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
-
-
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
+# Папка, в которую соберутся все файлы при `collectstatic`
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
