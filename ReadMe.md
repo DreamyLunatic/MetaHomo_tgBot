@@ -1,13 +1,30 @@
-# A web application built with Django for searching people inclined to transhumanism.
+# A web application built with Django for finding people inclined toward transhumanism.
 
-## Features
-- Authorization via Telegram
-- Personal account
-  ![Personal account](demo/PersonalAccount.gif) 
-- Admin panel
-  ![Admin panel](demo/AdminDemo.gif)
-  (super user can be created using: python manage.py createsuperuser)
-- Lifelongency map
+## 🚀 Features
+
+### 🔐 Authorization via Telegram
+Secure sign-in via Telegram Bot with signature verification.
+
+---
+
+### 👤 Personal Account
+Each user has a personal dashboard displaying their information.
+
+![Personal account](demo/PersonalAccount.gif)
+
+---
+
+### ⚙️ Admin Panel
+Full-featured Django admin interface.  
+Create a superuser with:
+
+```bash
+python manage.py createsuperuser
+```
+
+ ![Admin panel](demo/AdminDemo.gif)
+
+ ---
 
 ## Credits
 Big thanks to:
